@@ -1,86 +1,19 @@
-lexemes TEXT, LT, RT, LB, RB, LP, RP, LCB, RCB, SEP, TAB
+lexemes TEXT, LP, RP, SEP, LB, RB, AT, TA
 
-# This word processing language defines some control characters.
-# They overlay some existing legacy control characters.
-#
-#             RT  LT  TAB     LB  RB
-#             ↓   ↓   ↓       ↓   ↓
-# [01-06]     SOH STX ETX EOT ENQ ACK
-# [10-16] DLE DC1 DC2 DC3 DC4 NAK SYN
-#             ↑   ↑   ↑   ↑       ↑
-#             LP  RP  LCB RCB     SEP
+element: TEXT
+       | LB block
+       | LP attribute
+       | AT location
 
-# The document is interpreted as plaintext if no control characters are used.
-plain: TEXT
-     | LP attribute
-     | LT block
+block: RB
+     | element block
 
-# Text blocks are interleaved along the plaintext.
-# The 'RT' is implicitly inserted into the end of the document
-# if it ends up being incomplete without it.
-block: RT
-     | TEXT next
-     | LP attribute next
-     | LB inline next
-     | placeholder next
-
-# Blocks may appear after each other, simply separated by block start marker.
-# We also have a way to nest blocks.
-next: block
-    | tab
-
-# Tabulation controls nesting of blocks.
-tab: TAB block
-   | LT block
-   | TAB tab
-   | LT tab
-
-# Tabulation has been designed such that any sequence of TAB-LT reveals
-# how deep the text block is nested inside an another one.
-
-# There are some requirements for valid tabulation.
-# Mainly the block to be nested inside must appear before nested blocks.
-
-# For example here's how you could represent a matrix:
-
-# ~(table)(matrix:3:3)
-# |~(tr)|| 1 || 0 || 0
-# |~(tr)|| 0 || 1 || 0
-# |~(tr)|| 0 || 0 || 1;
-
-# Inline-text representation for the same matrix would be:
-# [(table)(matrix:3:3)
-#   [(tr)[1][0][0]]
-#   [(tr)[0][1][0]]
-#   [(tr)[0][0][1]]]
-
-# Inline blocks provide a way to provide some structure inside text.
-inline: RB
-      | TEXT inline
-      | LP attribute inline
-      | LB inline inline
-      | placeholder inline
-
-# Attributes are records that can be marked into each element in the document.
 attribute: RP
          | TEXT RP
          | SEP attribute
          | TEXT SEP attribute
 
-# If the plaintext part of the document is a language,
-# it is provided with placeholders within text.
-placeholder: LCB RCB
-           | LCB TEXT RCB
-
-# The special symbols may be revealed.
-# When done so they are drawn as ascii characters according to the next table:
-# LT ~
-# RT ;
-# TAB |
-# LB [
-# RB ]
-# LP (
-# RP )
-# LCB {
-# RCB }
-# SEP :
+location: TA
+        | LP attribute location
+        | TEXT location
+        | SEP location

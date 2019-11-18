@@ -1,0 +1,17 @@
+languageen
+titleSample text
+I wrote a sample text with the new format,
+using the PyQt5 editor.
+The overall experience of using a rich-text editor for rich-text editing
+is quite enjoyable.
+I think I like this.
+
+The editor isn't even working well at the time of writing this.
+The cursor is appearing and disappearing on the screen
+and everything does not just seem but are incomplete.
+It's not an usable text editor yet, but it is a text editor that can be used.
+I've created a monster!
+
+Though, what next?
+I'm not sure because there's still quite lot of things that should work
+for this to pass as a proper text editor for anything.
