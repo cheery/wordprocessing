@@ -4,34 +4,24 @@ from functools import partial
 # This is a generated LR0 grammar
 # python parsergen4.py ../wordprocessing/grammar.txt
 #        -p -o ../wordprocessing/wp_parser2_tables.py --lr0
-symtab = ['AT', 'LB', 'LP', 'RB', 'RP', 'SEP', 'TA', 'TEXT', 'element', 'block', 'attribute', 'location']
-rtab = [ (12, [True]),
-         (8, [True]),
-         (8, [True, False]),
-         (8, [True, False]),
-         (8, [True, False]),
-         (9, [False]),
-         (9, [True, True]),
-         (10, [False]),
-         (10, [False, True]),
-         (10, [True, False]),
-         (10, [True, False, True]),
-         (11, [False]),
-         (11, [True, True, False]),
-         (11, [True, True]),
-         (11, [True, False])]
-state = [ [2, 1, 3,  0,  0,  0,   0, -2, -1, 0, 0, 0],
-          [2, 1, 3, -6,  0,  0,   0, -2, 4, -3, 0, 0],
-          [0, 0, 7,  0,  0,  6, -12,  5, 0, 0, 0, -5],
-          [0, 0, 0,  0, -8,  9,   0,  8, 0, 0, -4, 0],
-          [2, 1, 3, -6,  0,  0,   0, -2, 4, -7, 0, 0],
-          [0, 0, 7,  0,  0,  6, -12,  5, 0, 0, 0, -14],
-          [0, 0, 7,  0,  0,  6, -12,  5, 0, 0, 0, -15],
-          [0, 0, 0,  0, -8,  9,   0,  8, 0, 0, 10, 0],
-          [0, 0, 0,  0, -9, 11,   0,  0, 0, 0, 0, 0],
-          [0, 0, 0,  0, -8,  9,   0,  8, 0, 0, -10, 0],
-          [0, 0, 7,  0,  0,  6, -12,  5, 0, 0, 0, -13],
-          [0, 0, 0,  0, -8,  9,   0,  8, 0, 0, -11, 0]]
+symtab = ['LB', 'LP', 'RB', 'RP', 'SEP', 'TEXT', 'element', 'block', 'attribute']
+rtab = [ (9, [True]),
+  (6, [True]),
+  (6, [True, False]),
+  (6, [True, False]),
+  (7, [False]),
+  (7, [True, True]),
+  (8, [False]),
+  (8, [False, True]),
+  (8, [True, False]),
+  (8, [True, False, True])]
+state = [ [1, 2, 0, 0, 0, -2, -1, 0, 0],
+  [1, 2, -5, 0, 0, -2, 3, -3, 0],
+  [0, 0, 0, -7, 5, 4, 0, 0, -4],
+  [1, 2, -5, 0, 0, -2, 3, -6, 0],
+  [0, 0, 0, -8, 6, 0, 0, 0, 0],
+  [0, 0, 0, -7, 5, 4, 0, 0, -9],
+  [0, 0, 0, -7, 5, 4, 0, 0, -10]]
 
 # Control character table
 ctrtab = {
@@ -39,35 +29,14 @@ ctrtab = {
     0x11: 4, # ctrl-Q, DC1, 'RP'
     0x12: 1, # ctrl-R, DC2, 'LB'
     0x13: 3, # ctrl-S, DC3, 'RB'
-    0x14: 0, # ctrl-T, DC4, 'AT'
-    0x15: 6, # ctrl-U, NAK, 'TA'
+    # 0x14: 0, # ctrl-T, DC4, 'AT'
+    # 0x15: 6, # ctrl-U, NAK, 'TA'
     0x16: 5} # ctrl-V, SYN, 'SEP'
 
-# Emergency exits are used if input ends up being incomplete
-def compute_emergency_exits():
-    exits = [-1] * len(state)
-    for i in range(len(state)):
-        best = -1
-        score = -1
-        for k in range(len(symtab)):
-            if state[i][k] < 0:
-                rule = -1-state[i][k]
-                thisscore = len(rtab[rule][1])-1
-                if (best == -1) or (thisscore >= score and rule < best):
-                    best = k
-                    score = thisscore
-        exits[i] = best
-        assert score <= 1 # Implement correct algorithm if higher scores detected.
-    # As long as scores are low, like 0,1, they wouldn't improve
-    # from further processing.
-    return exits
-
-emergency_exits = compute_emergency_exits()
-
-Lexeme = namedtuple("Lexeme", [
-    'offset', 'length', 'group', 'text', 'emergency_shit'])
+Text = namedtuple("Text", [
+    'offset', 'length', 'group', 'text'])
 Element = namedtuple("Element", [
-    'offset', 'length', 'group', 'rule', 'contents', 'emergency_shit'])
+    'offset', 'length', 'group', 'rule', 'contents'])
 
 # Lexical analysis
 class LexState:
@@ -84,25 +53,26 @@ def lex_char(lex, ch):
     mode = ctrtab.get(ord(ch), 7)
     if mode != 7 and len(lex.buf) > 0:
         text = "".join(lex.buf)
-        lex.fn(Lexeme(lex.offset, len(text), 7, text, False))
+        lex.fn(Text(lex.offset, len(text), 7, text))
         lex.buf = []
         lex.offset = lex.offset + len(text)
     if mode == 7:
         lex.buf.append(ch)
     else:
-        lex.fn(Lexeme(lex.offset, len(ch), mode, ch, False))
+        lex.fn(Text(lex.offset, len(ch), mode, ch))
         lex.offset = lex.offset + len(ch)
 
 def lex_done(lex):
     if len(lex.buf) > 0:
         text = "".join(lex.buf)
-        lex.fn(Lexeme(lex.offset, len(text), 7, text, False))
+        lex.fn(Text(lex.offset, len(text), 7, text))
         lex.buf = []
         lex.offset = lex.offset + len(text)
 
 # Parsing
 class PState:
     def __init__(self, offset, fn):
+        self.failsafe = []
         self.lex = LexState(offset, partial(shift, self))
         self.stack = (None, 0)
         self.fn = fn
@@ -110,16 +80,26 @@ class PState:
 def shift(pas, obj):
     stack = pas.stack
     action = state[stack[1]][obj.group]
-    # If things break here, we should actually put this into search mode.
-    # Do fix-sequence or a panic step.
-    #assert action != 0
+    # If things break here, we take the failsafe and use it.
+    if action == 0:
+        include_obj = (state[0][obj.group] == 0)
+        if include_obj:
+            pas.failsafe.append(obj)
+        offset = pas.failsafe[0].offset
+        length = pas.failsafe[-1].offset + pas.failsafe[-1].length - offset
+        slide(pas.failsafe, -offset)
+        pas.fn(Element(offset, length, 8, 0, pas.failsafe))
+        pas.failsafe = []
+        if include_obj:
+            return
+    else:
+        pas.failsafe.append(obj)
     while action < 0:
         top = (stack, obj)
         rule = (-1-action)
         if rule == 0:
             action = 0
         else:
-            emergency_shit = False
             group = rtab[rule][0]
             contents = []
             offset = obj.offset
@@ -129,16 +109,16 @@ def shift(pas, obj):
                 top = stack[0]
                 if capflag:
                     contents.append(expr)
-                emergency_shit |= expr.emergency_shit
                 length += offset - expr.offset
                 offset = expr.offset
             contents.reverse()
             slide(contents, -offset)
-            obj = Element(offset, length, group, rule, contents, emergency_shit)
+            obj = Element(offset, length, group, rule, contents)
             action = state[stack[1]][group]
     if action == 0:
         pas.stack = (None, 0)
         pas.fn(obj)
+        pas.failsafe = []
     else:
         pas.stack = ((stack, obj), action)
 
@@ -146,22 +126,13 @@ def shift(pas, obj):
 def slide(contents, delta):
     for i in range(len(contents)):
         obj = contents[i]
-        if isinstance(obj, Lexeme):
-            obj = Lexeme(obj.offset+delta, obj.length,
-                obj.group, obj.text, obj.emergency_shit)
+        if isinstance(obj, Text):
+            obj = Text(obj.offset+delta, obj.length,
+                obj.group, obj.text)
         elif isinstance(obj, Element):
             obj = Element(obj.offset+delta, obj.length,
-                obj.group, obj.rule, obj.contents, obj.emergency_shit)
+                obj.group, obj.rule, obj.contents)
         contents[i] = obj
-
-def panic_excretion(pas):
-    while pas.stack[0] != None:
-        group = emergency_exits[pas.stack[1]]
-        if group < 8:
-            obj = Lexeme(pas.lex.offset, 0, group, "", True)
-        else:
-            obj = Element(pas.lex.offset, 0, group, -1, [], True)
-        shift(pas, obj)
 
 # The interface to this module.
 def parse_text(pas, text):
@@ -169,12 +140,22 @@ def parse_text(pas, text):
 
 def parse_done(pas):
     lex_done(pas.lex)
-    panic_excretion(pas)
+    if len(pas.failsafe) > 0:
+        offset = pas.failsafe[0].offset
+        length = pas.failsafe[-1].offset + pas.failsafe[-1].length - offset
+        slide(pas.failsafe, -offset)
+        pas.fn(Element(offset, length, 8, 0, pas.failsafe))
+        pas.failsafe = []
+
 
 if __name__=='__main__':
+    import argparse
+    apa = argparse.ArgumentParser(description="Try out the parser")
+    apa.add_argument('filename', type=str)
+    args = apa.parse_args()
     def fook(element):
         print(element)
     pas = PState(0, fook)
-    with open("../sample_text.wp", 'r') as fd:
+    with open(args.filename, 'r') as fd:
         parse_text(pas, fd.read())
     parse_done(pas)

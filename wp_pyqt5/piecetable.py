@@ -1,7 +1,8 @@
 class PieceTable(object):
     def __init__(self, fulltext):
+        assert isinstance(fulltext, bytes)
         self.fulltext = fulltext # The original text file.
-        self.addtext = ""        # Text added to the original file.
+        self.addtext = b""       # Text added to the original file.
         self.pieces = [          # Pieces of the piece table.
             (0, len(fulltext)) ]
         self.length = len(fulltext)
@@ -27,6 +28,7 @@ class PieceTable(object):
 
     # Effect: String gets inserted at the offset.
     def insert(self, offset, string):
+        assert isinstance(string, bytes)
         if len(string) == 0:
             return
         i, cut = self.index_pieces(offset)
@@ -80,20 +82,61 @@ class PieceTable(object):
     def peek(self, offset, length):
         assert 0 <= offset and offset + length <= self.length
         if length == 0:
-            yield ""
-        i, offset = self.index_pieces(offset)
-        poff, plen = self.pieces[i]
-        poff += offset
-        plen -= offset
-        while plen < length:
-            yield self.get_buffertext(poff, plen)
-            length -= plen
-            i += 1
+            yield b""
+        else:
+            i, offset = self.index_pieces(offset)
             poff, plen = self.pieces[i]
-        if length > 0:
-            yield self.get_buffertext(poff, length)
+            poff += offset
+            plen -= offset
+            while plen < length:
+                yield self.get_buffertext(poff, plen)
+                length -= plen
+                i += 1
+                poff, plen = self.pieces[i]
+            if length > 0:
+                yield self.get_buffertext(poff, length)
 
     def __iter__(self):
         for poff, plen in self.pieces:
             yield self.get_buffertext(poff, plen)
 
+    # Needed to satisfy the tree sitter
+    def get_point(self, base, offset):
+        start, (lno, col) = base
+        for data in self.peek(start, offset-start):
+            assert isinstance(data,bytes)
+            y = data.count(b"\n")
+            lno += y
+            if y > 0:
+                col = len(data) - data.rfind(b"\n") - 1
+            else:
+                col += len(data)
+        return offset, (lno, col)
+
+    # Another thing that became necessity
+    # because they are byte offsets now.
+    def go_left(self, offset, count=1):
+        if count == 0:
+            return offset
+        for data in reversed(list(self.peek(0, offset))):
+            for byte in reversed(data):
+                offset -= 1
+                if byte < 0x80 or 0xC0 <= byte:
+                    if count == 1:
+                        return offset
+                    else:
+                        count -= 1
+        return offset
+
+    def go_right(self, offset, count=1):
+        if count == 0:
+            return offset
+        for data in self.peek(offset, self.length-offset):
+            for byte in data:
+                if byte < 0x80 or 0xC0 <= byte:
+                    if count == 0:
+                        return min(offset, self.length)
+                    else:
+                        count -= 1
+                offset += 1
+        return min(offset, self.length)

@@ -1,17 +1,60 @@
+dtddoc
 languageen
 titleSample text
-I wrote a sample text with the new format,
-using the PyQt5 editor.
-The overall experience of using a rich-text editor for rich-text editing
-is quite enjoyable.
-I think I like this.
+h1The very first document
+This is the first document I wrote
+with the new format.
+When I wrote this, it was barely working at all.
 
-The editor isn't even working well at the time of writing this.
-The cursor is appearing and disappearing on the screen
-and everything does not just seem but are incomplete.
-It's not an usable text editor yet, but it is a text editor that can be used.
-I've created a monster!
+Overall using a WYSIWYG editor
+ for editing of texts is enjoyable 
+and beats use of a plain-text editor for the same purpose. 
+The format makes it such that an ordinary plain-text editor 
+looks and behaves like a rich-text editor!
 
-Though, what next?
-I'm not sure because there's still quite lot of things that should work
-for this to pass as a proper text editor for anything.
+Even with a badly working editor 
+it's fairly pleasing to use 
+because I don't need to worry about escape-characters in the format. 
+If I write text it's text and doesn't end up being secretly interpreted as a %formatting% command.
+
+To avoid the occassion that something is written into a comment
+that should be interpreted as content,
+it's a good idea to color the toplevel-text as gray or pink-gray.
+Seems to work.
+What's the first use-case 
+for this kind of a format? I think I'm going to use it in my blog soon.
+
+Also exploring how to extend pandochrefhttps://pandoc.org to use it. 
+That should be easy but I'm not sure.
+
+Btw. In the experimental text-editor there's not a button to insert or remove tags.
+I produce the control-codes by pressing their respective codes directly.
+I like how that actually seems to work despite that it's not an idea way to do it.
+
+Use cases h2
+It's customary how to place heading attributes.
+I think it's nice to be able to give them afterwards.
+
+If you wonder how the formatted parts seem to be
+broken into lines, this is actually something I expect to happen.
+I present line-breaks as a way to pace your paragraph.
+So-called "semantic line breaks".
+I've been doing that for a while
+when writing text files with traditional means.
+There are tons of places
+where you could use a format like this. 
+There are a lot of potential use-cases.
+
+The first obvious one, of course, 
+is just to use it for whatever thing you'd use a word document for. 
+But there are some less obvious places.
+list
+Configuration files, you can declare new DTD on an use-case basis.
+Boom, now the same config for technical users is also presentable for "ordinary" users.
+Quick graphical presentations in middle of a text or code -file are easy to setup.
+I guess you could use SVG for that and have a plugin in the text-editor to draw them.
+Different sort of content-editors can use the format for their own purposes.
+For example in a game engine you could use this kind of a format as a foundation
+for the object editor.
+Text-based computing overall is a nice concept.
+This format continues in that tradition and makes it better.

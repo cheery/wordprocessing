@@ -1,9 +1,8 @@
-lexemes TEXT, LP, RP, SEP, LB, RB, AT, TA
+lexemes TEXT, LP, RP, SEP, LB, RB
 
 element: TEXT
        | LB block
        | LP attribute
-       | AT location
 
 block: RB
      | element block
@@ -12,8 +11,3 @@ attribute: RP
          | TEXT RP
          | SEP attribute
          | TEXT SEP attribute
-
-location: TA
-        | LP attribute location
-        | TEXT location
-        | SEP location

@@ -7,6 +7,8 @@ import importlib # For importlib.reload
 import paint_qt5
 import minitex
 import view
+import os
+import os.path
 import sys
 import math
 
@@ -44,6 +46,7 @@ class MainWindow(QMainWindow):
     #    print("actions on close")
     #    event.accept()
 
+
 class EditorFrame(QFrame):
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
@@ -53,9 +56,16 @@ class EditorFrame(QFrame):
         self.frame_height = 0
         self.rootbox = None
 
-        self.filename = "../sample_text.wp"
-        with open(self.filename, 'r', encoding='utf-8') as fd:
-            self.buffer = PieceTable(fd.read())
+        self.filename = sys.argv[1]
+
+        if os.path.exists(self.filename):
+            with open(self.filename, 'rb') as fd:
+                self.buffer = PieceTable(fd.read())
+        else:
+            self.buffer = PieceTable(b"")
+        self.dom = view.init_dom(self.buffer)
+        #with open(self.filename, 'r', encoding='utf-8') as fd:
+        #    self.buffer = PieceTable(fd.read())
 
         self.par_font = QtGui.QFont('Sans Serif', 24)
         self.par_raw = QtGui.QRawFont.fromFont(self.par_font)
@@ -73,17 +83,20 @@ class EditorFrame(QFrame):
         self.cursor = 0
         self.y_scroll = 0
 
-        import os.path
-        self.view_mtime = os.path.getmtime("view.py")
+
+        dname = os.path.dirname(__file__)
+        self.view_mtime = os.path.getmtime(
+            os.path.join(dname, "view.py"))
         self.view_recheck = QtCore.QTimer(self)
         self.view_recheck.timeout.connect(self.recheckEvent)
         self.view_recheck.start(1000)
         self.selections = []
 
     def recheckEvent(self):
-        import os.path
         try:
-            view_mtime = os.path.getmtime("view.py")
+            dname = os.path.dirname(__file__)
+            view_mtime = os.path.getmtime(
+                os.path.join(dname, "view.py"))
         except FileNotFoundError as _:
             pass
         else:
@@ -101,10 +114,10 @@ class EditorFrame(QFrame):
         if self.frame_width == 0 or self.frame_height == 0:
             return
         if self.display_plain:
-            self.rootbox = view.plaintext_display(self.buffer,
+            self.rootbox = view.plaintext_display(self.dom,
                 self.mono_raw)
         else:
-            self.rootbox = view.full_display(self.buffer,
+            self.rootbox = view.full_display(self.dom,
                 self.mono_raw, self.par_raw, self.getfont)
 
     def getfont(self, size):
@@ -148,30 +161,35 @@ class EditorFrame(QFrame):
             self.update()
         # Temporary key to allow file to be saved.
         elif e.key() == QtCore.Qt.Key_F2:
-            with open(self.filename, 'w', encoding='utf-8') as fd:
+            with open(self.filename, 'wb') as fd:
                 for text in self.buffer.peek(0, self.buffer.length):
                     fd.write(text)
-        #elif e.key() == Qt.Key_Escape:
-        #    self.parent().close()
+        # TODO: Drop this out later.
+        elif e.key() == Qt.Key_Escape:
+            self.parent().close()
         elif e.key() == QtCore.Qt.Key_Backspace:
             if self.cursor > 0:
-                self.cursor -= 1
-                self.buffer.delete(self.cursor, length=1)
+                prev = self.cursor
+                self.cursor = self.buffer.go_left(self.cursor,1)
+                self.dom,_ = view.slice(self.dom, self.cursor, prev, "")
+                #self.buffer.delete(self.cursor, length=1)
                 self.relayout()
                 self.update()
         elif e.key() == QtCore.Qt.Key_Delete:
             if self.buffer.length > self.cursor:
-                self.buffer.delete(self.cursor, length=1)
+                stop = self.buffer.go_right(self.cursor,1)
+                self.dom,_ = view.slice(self.dom, self.cursor, stop, "")
+                #self.buffer.delete(self.cursor, length=1)
                 self.relayout()
                 self.update()
         elif e.key() == QtCore.Qt.Key_Left:
             if self.cursor > 0:
-                self.cursor -= 1
+                self.cursor = self.buffer.go_left(self.cursor,1) 
                 self.relayout()
                 self.update()
         elif e.key() == QtCore.Qt.Key_Right:
             if self.cursor < self.buffer.length:
-                self.cursor += 1
+                self.cursor = self.buffer.go_right(self.cursor, 1)
                 self.relayout()
                 self.update()
         elif e.key() == QtCore.Qt.Key_Up:
@@ -185,14 +203,16 @@ class EditorFrame(QFrame):
                 self.cursor = ncursor
                 self.update()
         elif e.key() == QtCore.Qt.Key_Return:
-            self.buffer.insert(self.cursor, '\n')
-            self.cursor += len('\n')
+            self.dom,k = view.slice(self.dom, self.cursor, self.cursor, "\n")
+            #self.buffer.insert(self.cursor, '\n')
+            self.cursor += k
             self.relayout()
             self.update()
         else:
             text = e.text()
-            self.buffer.insert(self.cursor, text)
-            self.cursor += len(text)
+            self.dom,k = view.slice(self.dom, self.cursor, self.cursor, text)
+            #self.buffer.insert(self.cursor, text)
+            self.cursor += k
             self.relayout()
             self.update()
 
