@@ -47,6 +47,86 @@ such as [treesitter](https://github.com/tree-sitter/tree-sitter),
 and graphical layouter/renderer is provided,
 then you have the intended editor for this format.
 
+## Type information
+
+To interpret a language,
+we'd ideally have a mathematical model
+of what stands as a valid element of the format.
+The information in context-free-grammar can be duplicated in a type:
+
+    file, element, attribute, text : type
+
+    file      = element
+    element   = list (text string | elem element | attr attribute)
+    attribute = (string, list string)
+
+But now we're able to specify more things.
+We specify that every element has a shape.
+
+    shape : element → set signature
+    shape (empty) = empty
+    shape (cons (text _) rest) = shape rest
+    shape (cons (elem _) rest) = shape rest
+    shape (cons (attr a) rest) = shape rest | singleton (signature_of a)
+
+The shape is a set of signatures collected from the attributes of the element.
+Signature is the first field in the attribute paired with it's arity.
+
+    signature : type
+    signature = (string, nat)
+
+    signature_of : attribute → signature
+    signature_of = (first, rest) = (first, length rest + 1)
+
+For clarity I've provided some type information for
+the lists and primitive structures used in the specification.
+
+    list : type → type
+    list a = ind (list ↦ empty | cons a list)
+
+    nat : type
+    nat = ind (nat ↦ zero 1 | succ nat)
+
+    string : type
+    string = ind (string ↦ empty | cons nat string)
+
+    fromInt   :     nat → string
+    length    : ∀a. list a → nat 
+    singleton : ∀a. a → set a
+    (|)       : ∀a. set a → set a → set a
+    (+)       :     nat → nat → nat
+    (++)      :     string → string → string
+
+Though I expect that these are provided.
+
+## Notions of further validity
+
+Valid markup is rarely what we want,
+as usually we are looking for well-formed structures
+that represent some subject of interest.
+
+To get useful notions of validity,
+we rely on type information again.
+Notions of what stands as a valid element are provided
+by types indexed with elements.
+
+    a_valid_element : type
+    a_valid_element = ∃e. (e : element), valid e
+
+    valid : element → type
+
+
+
+    empty : element → type
+    empty e = (e = empty)
+
+    non_empty : element → type
+    non_empty e = ∃x.∃y.
+        (x:text string|elem element|attr attribute,
+         y:element,
+         e = cons x y)
+
+
 ## Processing rules
 
 The file is considered to be plaintext structure
