@@ -115,7 +115,9 @@ by types indexed with elements.
 
     valid : element → type
 
-
+This allows type-theoretic build-up of validators.
+For example here's a structure that can be only constructed
+if the element is empty, and respectively for ensuring the element is non-empty.
 
     empty : element → type
     empty e = (e = empty)
@@ -125,6 +127,100 @@ by types indexed with elements.
         (x:text string|elem element|attr attribute,
          y:element,
          e = cons x y)
+
+We can give this a deeper treatment later.
+For now lets look at one use-case
+that is document generation through pandoc.
+
+## Pandoc -usecase
+
+Pandoc is an universal markup converter
+that gives a good juicy platform.
+If translation of wordprocessing files to Pandoc succeed well,
+then the files can be exported to a large variety of document formats.
+
+Pandoc consist of a Meta -field & list of blocks.
+
+    data Pandoc = Pandoc Meta [Block]
+
+    newtype Meta = Meta { unMeta :: M.Map Text MetaValue }
+
+Meta values is something like your JSON + some structure.
+
+    data MetaValue = MetaMap (M.Map Text MetaValue)
+                   | MetaList [MetaValue]
+                   | MetaBool Bool
+                   | MetaString Text
+                   | MetaInlines [Inline]
+                   | MetaBlocks [Block]
+
+Blocks seem to represent vertically layouted elements.
+
+    data Block
+        = Plain [Inline]        -- ^ Plain text, not a paragraph
+        | Para [Inline]         -- ^ Paragraph
+        | LineBlock [[Inline]]  -- ^ Multiple non-breaking lines
+        | CodeBlock Attr Text -- ^ Code block (literal) with attributes
+        | RawBlock Format Text -- ^ Raw block
+        | BlockQuote [Block]    -- ^ Block quote (list of blocks)
+        | OrderedList ListAttributes [[Block]] -- ^ Ordered list (attributes
+                                -- and a list of items, each a list of blocks)
+        | BulletList [[Block]]  -- ^ Bullet list (list of items, each
+                                -- a list of blocks)
+        | DefinitionList [([Inline],[[Block]])]  -- ^ Definition list
+                                -- Each list item is a pair consisting of a
+                                -- term (a list of inlines) and one or more
+                                -- definitions (each a list of blocks)
+        | Header Int Attr [Inline] -- ^ Header - level (integer) and text (inlines)
+        | HorizontalRule        -- ^ Horizontal rule
+        | Table [Inline] [Alignment] [Double] [TableCell] [[TableCell]]  -- ^ Table,
+                                -- with caption, column alignments (required),
+                                -- relative column widths (0 = default),
+                                -- column headers (each a list of blocks), and
+                                -- rows (each a list of lists of blocks)
+        | Div Attr [Block]      -- ^ Generic block container with attributes
+        | Null                  -- ^ Nothing
+
+Inline elements seem to be 'groups', insertions, or pieces within text.
+
+    data Inline
+        = Str Text            -- ^ Text (string)
+        | Emph [Inline]         -- ^ Emphasized text (list of inlines)
+        | Strong [Inline]       -- ^ Strongly emphasized text (list of inlines)
+        | Strikeout [Inline]    -- ^ Strikeout text (list of inlines)
+        | Superscript [Inline]  -- ^ Superscripted text (list of inlines)
+        | Subscript [Inline]    -- ^ Subscripted text (list of inlines)
+        | SmallCaps [Inline]    -- ^ Small caps text (list of inlines)
+        | Quoted QuoteType [Inline] -- ^ Quoted text (list of inlines)
+        | Cite [Citation]  [Inline] -- ^ Citation (list of inlines)
+        | Code Attr Text      -- ^ Inline code (literal)
+        | Space                 -- ^ Inter-word space
+        | SoftBreak             -- ^ Soft line break
+        | LineBreak             -- ^ Hard line break
+        | Math MathType Text  -- ^ TeX math (literal)
+        | RawInline Format Text -- ^ Raw inline
+        | Link Attr [Inline] Target  -- ^ Hyperlink: alt text (list of inlines), target
+        | Image Attr [Inline] Target -- ^ Image:  alt text (list of inlines), target
+        | Note [Block]          -- ^ Footnote or endnote
+        | Span Attr [Inline]    -- ^ Generic inline container with attributes
+
+There are smaller elements within this structure, but you probably get the idea.
+It's a complex intermediate structure that needs to cover many contexts
+while somewhat capture the things that people care about in documents.
+
+The procedure to produce looks following:
+
+    readWordProcessing :: PandocMonad m
+                       => ReaderOptions -- ^ Reader options
+                       -> Text          -- ^ String to parse (assuming @'\n'@ line endings)
+                       -> m Pandoc
+
+To start this off we better build a function that just parses WP into elements.
+
+    parseWP :: Text -> Either ParseError Element
+
+There's such a parser in the `haskell-parser/Main.hs`.
+
 
 
 ## Processing rules
