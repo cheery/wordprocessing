@@ -61,6 +61,22 @@ The information in context-free-grammar can be duplicated in a type:
     attribute = (string, list string)
 
 But now we're able to specify more things.
+
+The element is canonical if every sub-element in it is canonical,
+and the following transformation does not change the element:
+
+    canon_fn : element → element
+    canon_fn = foldr compact []
+
+    compact : node -> element -> element
+    compact (text s) (cons (text v) z) = cons (text (s ++ v)) z
+    compact a        z                 = cons a z
+
+We could state the property as such:
+
+    is_canonical : element → type
+    is_canonical elem = (canon_fn elem = elem)
+
 We specify that every element has a shape.
 
     shape : element → set signature
@@ -221,7 +237,29 @@ To start this off we better build a function that just parses WP into elements.
 
 There's such a parser in the `haskell-parser/Main.hs`.
 
+I'm in middle of implementing [the WordProcessing-format][pd] into pandoc.
 
+ [pd]: https://github.com/cheery/pandoc
+
+
+### Paragraph block breaking
+
+For presentation or translation purposes it may be preferable
+to break a paragraph block into smaller elements.
+The type for such function would be:
+
+    break_paragraph : element → list element
+
+To implement it,
+bring the element into a canonical form if it already is not.
+Now for every text block in the element list,
+find longest non-overlapping sequences
+matching the following regular expression:
+
+    \n[ \t\r\n]*\n
+
+Split the text, replacing the sequences with paragraph splitting markers,
+then split the whole element from those markers into smaller elements.
 
 ## Processing rules
 
@@ -298,3 +336,7 @@ providing literate text files or procedural documents.
 The project is in a "dogfooding" -phase.
 I'm beginning to put the format into an use
 and see how it works in practice.
+
+The pandoc-support for the format:
+Dumps out the whole input file as paragraphs.
+Error handling absent in parser.
