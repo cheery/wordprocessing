@@ -241,6 +241,44 @@ I'm in middle of implementing [the WordProcessing-format][pd] into pandoc.
 
  [pd]: https://github.com/cheery/pandoc
 
+### Pandoc document data type
+
+The document data type must be declared in the beginning of the document.
+
+    (dtd;pandoc)
+
+This is the only element that must be positioned topmost for now.
+
+The remaining contents of the pandoc document are scanned through.
+The `meta/3` attributes are interpreted as meta-fields.
+For example you can identify the language of the document like this:
+
+    (meta;lang;en)
+
+The identification of block/inlines are looked up from the shape of the element,
+except that the shape includes only the attributes
+that appear exactly once within an element.
+
+Otherwise inside a toplevel-element, if there is an unique `meta/2` -attribute,
+it'll be used up as an attribute.
+
+### Pandoc meta attributes
+
+If the element is a meta-element, the shape of the element is analysed.
+
+If there's `(^)` -attribute in the field,
+the whole element is interpreted as a block.
+
+These should be self-explanatory:
+
+    (map) [(key;_)value] [(key;_)value] [(key;_)value]
+    (list) [_] [_] [_] [_]
+    (true)
+    (false)
+    (string)text
+
+If there are no attributes other than the meta,
+the field is interpreted as an inline field.
 
 ### Paragraph block breaking
 

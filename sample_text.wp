@@ -1,7 +1,7 @@
-dtddoc
-languageen
-titleSample text
-h1The very first document
+dtdpandoc
+metalangen
+metatitleSample text
+heading1The very first document
 This is the first document I wrote
 with the new format.
 When I wrote this, it was barely working at all.
